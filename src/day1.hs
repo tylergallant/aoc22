@@ -1,9 +1,6 @@
 module Main where
 
-import Control.Monad
-import Data.Bifunctor
 import Data.List
-import System.IO
 
 nonEmpty :: String -> String -> Bool
 nonEmpty s1 s2 = not $ any null [s1, s2]
