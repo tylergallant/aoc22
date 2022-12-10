@@ -18,10 +18,23 @@ bisect xs = splitAt middle xs
 commonElements :: Eq a => [a] -> [a] -> [a]
 commonElements xs ys = intersect (nub xs) (nub ys)
 
-solve :: String -> String
-solve = show . sum . map itemPriority . catMaybes . map checkBag . lines
-  where checkBag = listToMaybe . uncurry commonElements . bisect
+groupN :: Int -> [a] -> [[a]]
+groupN _ [] = []
+groupN n xs
+  | n <= 0 = []
+  | otherwise = take n xs : groupN n (drop n xs)
+
+solve :: ([String] -> [Maybe Char]) -> String -> String
+solve f = show . sum . map itemPriority . catMaybes . f . lines
+
+solveA :: String -> String
+solveA = solve checkBags
+  where checkBags = map $ listToMaybe . uncurry commonElements . bisect
+
+solveB :: String -> String
+solveB = solve $ findBadges . groupN 3
+  where findBadges = map $ listToMaybe . foldr1 commonElements
 
 main :: IO ()
-main = interact solve
+main = interact $ \i -> solveA i ++ "\n" ++ solveB i
 
