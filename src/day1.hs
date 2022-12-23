@@ -1,22 +1,19 @@
 module Main where
 
 import Data.List
+import Solution
+import Text.ParserCombinators.ReadP
 
-nonEmpty :: String -> String -> Bool
-nonEmpty s1 s2 = not $ any null [s1, s2]
+pElves :: ReadP [[Int]]
+pElves = sepBy pElf $ char '\n'
+  where pElf = many $ readS_to_P reads <* char '\n'
 
-readAndSum :: [String] -> Int
-readAndSum = sum . map read
+solveA :: Solution
+solveA = mkSolution pElves $ maximum . map sum
 
-sumElves :: String -> [Int]
-sumElves = map readAndSum . filter (/= [""]) . groupBy nonEmpty . lines
-
-solveA :: String -> String
-solveA = show . maximum . sumElves
-
-solveB :: String -> String
-solveB = show . sum . take 3 .  sortBy (flip compare) . sumElves
+solveB :: Solution
+solveB = mkSolution pElves $ sum . take 3 . sortBy (flip compare) . map sum
 
 main :: IO ()
-main = interact $ \i -> solveA i ++ "\n" ++ solveB i
+main = runSolution "day1.txt" $ solveA <> solveB
 

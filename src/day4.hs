@@ -2,6 +2,7 @@ module Main where
 
 import Data.Maybe
 import Text.ParserCombinators.ReadP
+import Solution
 
 type Range = (Int, Int)
 
@@ -23,15 +24,15 @@ pRange = (,) <$> pInt <*> (char '-' *> pInt)
 pPair :: ReadP (Range, Range)
 pPair = (,) <$> pRange <*> (char ',' *> pRange)
 
-parse :: ReadP a -> String -> Maybe a
-parse p = listToMaybe . map fst . filter (null . snd) . readP_to_S p
+pPairs :: ReadP [(Range, Range)]
+pPairs = many $ pPair <* char '\n'
 
-solveA :: String -> String
-solveA = show . length . filter fullOverlap . catMaybes . map (parse pPair) . lines
+solveA :: Solution
+solveA = mkSolution pPairs $ length . filter fullOverlap
 
-solveB :: String -> String
-solveB = show . length . filter partialOverlap . catMaybes . map (parse pPair) . lines
+solveB :: Solution
+solveB = mkSolution pPairs $ length . filter partialOverlap
 
 main :: IO ()
-main = interact $ \i -> solveA i ++ "\n" ++ solveB i
+main = runSolution "day4.txt" $ solveA <> solveB
 

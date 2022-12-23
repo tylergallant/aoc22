@@ -2,7 +2,8 @@ module Main where
 
 import Data.Char
 import Data.List
-import Data.Maybe
+import Solution
+import Text.ParserCombinators.ReadP
 
 itemPriority :: Char -> Int
 itemPriority c
@@ -24,17 +25,17 @@ groupN n xs
   | n <= 0 = []
   | otherwise = take n xs : groupN n (drop n xs)
 
-solve :: ([String] -> [Maybe Char]) -> String -> String
-solve f = show . sum . map itemPriority . catMaybes . f . lines
+parser :: ReadP [String]
+parser = many $ manyTill get $ char '\n'
 
-solveA :: String -> String
-solveA = solve checkBags
-  where checkBags = map $ listToMaybe . uncurry commonElements . bisect
+solveA :: Solution
+solveA = mkSolution parser $ sum . concat . map commonItemPriority
+  where commonItemPriority = map itemPriority . uncurry commonElements . bisect
 
-solveB :: String -> String
-solveB = solve $ findBadges . groupN 3
-  where findBadges = map $ listToMaybe . foldr1 commonElements
+solveB :: Solution
+solveB = mkSolution parser $ sum . map itemPriority . findBadges
+  where findBadges = concat . map (foldr1 commonElements) . groupN 3
 
 main :: IO ()
-main = interact $ \i -> solveA i ++ "\n" ++ solveB i
+main = runSolution "day3.txt" $ solveA <> solveB
 

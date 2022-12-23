@@ -1,7 +1,7 @@
 module Main where
 
-import Control.Applicative
-import Data.Maybe
+import Control.Applicative hiding (many)
+import Solution
 import Text.ParserCombinators.ReadP
 
 data Shape = Rock | Paper | Scissors deriving (Eq, Enum)
@@ -68,16 +68,17 @@ parseRoundShapes = (,) <$> parseOpponentShape <*> (skipSpaces *> parsePlayerShap
 parseShapeOutcome :: ReadP (Shape, Outcome)
 parseShapeOutcome = (,) <$> parseOpponentShape <*> (skipSpaces *> parseOutcome)
 
-solve :: (a -> Int) -> ReadP a -> String -> String
-solve score p = show . sum . map score . catMaybes . map parse . lines
-  where parse = fmap fst . listToMaybe . filter (null.snd) . readP_to_S p
+parseLinesWith :: ReadP a -> ReadP [a]
+parseLinesWith p = many $ p <* char '\n'
 
-solveA :: String -> String
-solveA = solve scoreRound parseRoundShapes
+solveA :: Solution
+solveA = mkSolution parser $ sum . map scoreRound
+  where parser = parseLinesWith parseRoundShapes
 
-solveB :: String -> String
-solveB = solve scoreDesiredOutcome parseShapeOutcome
+solveB :: Solution
+solveB = mkSolution parser $ sum . map scoreDesiredOutcome
+  where parser = parseLinesWith parseShapeOutcome
 
 main :: IO ()
-main = interact $ \i -> solveA i ++ "\n" ++ solveB i
+main = runSolution "day2.txt" $ solveA <> solveB
 
