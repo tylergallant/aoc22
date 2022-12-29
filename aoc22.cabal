@@ -64,3 +64,10 @@ executable day6
     base ^>=4.17.0.0,
     lib-internal
 
+executable day7
+  main-is:          day7.hs
+  hs-source-dirs:   src
+  default-language: Haskell2010
+  build-depends:
+    base ^>=4.17.0.0,
+    lib-internal
