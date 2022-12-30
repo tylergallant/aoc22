@@ -1,40 +1,56 @@
 module Main where
 
 import Data.List
+import Data.Map (Map)
+import qualified Data.Map as M
 import Solution
 import Text.ParserCombinators.ReadP
 
 type Size = Integer
 type Name = String
+type Path = [Name]
+type FileSystem = Map Path Size
 
-data LsOutput = FileOutput Size Name | DirOutput Name deriving Show
+data Command = CdDir Name | CdParent | CdRoot | Ls Size
 
-data Command = CdDir Name | CdParent | CdRoot | Ls [LsOutput] deriving Show
+evalLs :: Path -> Size -> FileSystem -> FileSystem
+evalLs cwd size fs
+  | M.member cwd fs = fs
+  | otherwise = M.insert cwd size $ M.mapWithKey addSizeToParents fs
+  where addSizeToParents dir = if elem dir $ tails cwd then (+size) else id
 
-data FileSystem = File Size Name | Dir Name [FileSystem]
+evalCommands :: [Command] -> FileSystem
+evalCommands = snd . foldl f ([], M.empty)
+  where
+    f (_, fs) CdRoot = ([], fs)
+    f ([], fs) CdParent = ([], fs)
+    f ((_:parent), fs) CdParent = (parent, fs)
+    f (cwd, fs) (CdDir dir) = (dir:cwd, fs)
+    f (cwd, fs) (Ls size) = (cwd, evalLs cwd size fs)
+
+sumDirsUpTo :: Size -> FileSystem -> Size
+sumDirsUpTo limit = sum . filter (<= limit) . M.elems
+
+pNewLine :: ReadP Char
+pNewLine = char '\n'
 
 pCd :: ReadP Command
-pCd = string "$ cd " *> pDestination <* char '\n'
+pCd = string "$ cd " *> pDestination
   where
     pDestination = pCdRoot <++ pCdParent <++ pCdDir
-    pCdRoot = CdRoot <$ char '/'
-    pCdParent = CdParent <$ string ".."
-    pCdDir = CdDir <$> many get
+    pCdRoot = pure CdRoot <* char '/' <* pNewLine
+    pCdParent = pure CdParent <* string ".." <* pNewLine
+    pCdDir = CdDir <$> manyTill get pNewLine
 
-pNodeName :: ReadP String
-pNodeName = char ' ' *> many get
-
-pFile :: ReadP LsOutput
-pFile = FileOutput <$> readS_to_P reads <*> pNodeName
-
-pDir :: ReadP LsOutput
-pDir = fmap DirOutput $ string "dir" *> pNodeName
+pFile :: ReadP Size
+pFile = readS_to_P reads <* char ' ' <* manyTill get pNewLine
 
 pLs :: ReadP Command
 pLs = fmap Ls $ string "$ ls\n" *> pFileNodes
   where
-    pFileNodes = many $ pFileNode <* char '\n'
-    pFileNode = pDir <++ pFile
+    pFileNodes = sum <$> many pFileNode
+    pFileNode = pDirNode <++ pFile
+    pDirNode = pure 0 <* string "dir" <* manyTill get pNewLine
 
 pCommand :: ReadP Command
 pCommand = pCd <++ pLs
@@ -43,7 +59,7 @@ parser :: ReadP [Command]
 parser = manyTill pCommand eof
 
 solve :: Solution
-solve = mkSolution parser id
+solve = mkSolution parser $ sumDirsUpTo 100000 . evalCommands
 
 main :: IO ()
 main = runSolution "day7.txt" solve
