@@ -31,6 +31,15 @@ evalCommands = snd . foldl f ([], M.empty)
 sumDirsUpTo :: Size -> FileSystem -> Size
 sumDirsUpTo limit = sum . filter (<= limit) . M.elems
 
+sizeOfDirToDelete :: FileSystem -> Size
+sizeOfDirToDelete fs = foldr min totalFsSize $ M.filter (>= neededSpace) fs
+  where
+    totalDiskSpace = 70000000
+    totalNeededSpace = 30000000
+    totalFsSize = M.findWithDefault 0 [] fs
+    freeSpace = totalDiskSpace - totalFsSize
+    neededSpace = totalNeededSpace - freeSpace
+
 pNewLine :: ReadP Char
 pNewLine = char '\n'
 
@@ -58,9 +67,12 @@ pCommand = pCd <++ pLs
 parser :: ReadP [Command]
 parser = manyTill pCommand eof
 
-solve :: Solution
-solve = mkSolution parser $ sumDirsUpTo 100000 . evalCommands
+solveA :: Solution
+solveA = mkSolution parser $ sumDirsUpTo 100000 . evalCommands
+
+solveB :: Solution
+solveB = mkSolution parser $ sizeOfDirToDelete . evalCommands
 
 main :: IO ()
-main = runSolution "day7.txt" solve
+main = runSolution "day7.txt" $ solveA <> solveB
 
